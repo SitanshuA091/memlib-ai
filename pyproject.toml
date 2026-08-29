@@ -9,6 +9,14 @@ dependencies = [
     "langchain-google-genai>=4.3.2",
     "langchain-groq>=1.1.3",
     "uuid>=1.30",
+    "python-dotenv"
+]
+
+[dependency-groups]
+test = [
+    "langchain-chroma",
+    "langchain-huggingface",
+    "sentence-transformers",
 ]
 
 [tool.uv]
