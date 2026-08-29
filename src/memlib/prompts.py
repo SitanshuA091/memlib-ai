@@ -78,7 +78,7 @@ Return ONLY valid JSON in one of these forms:
   "operation": "NOOP"
 }
 
-Choose UPDATE or DELETE only when an existing memory is actually affected.
 Do not invent memory IDs.
 Keep memory content concise and durable.
 """
+

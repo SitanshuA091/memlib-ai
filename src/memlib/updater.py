@@ -1,34 +1,41 @@
+"""LLM-based global memory update resolver."""
+
 import json
-import sqlite3
 import uuid
 from collections.abc import Sequence
 from typing import Any
 
 from memlib.llm import LLMClient
+from memlib.store import MemoryStore
 from memlib.types import CandidateMemory, MemoryItem, MemoryOperation, Message
 from memlib.prompts import UPDATE_SYSTEM_PROMPT
 
 
-
 class MemoryUpdater:
+    """Resolves candidate memories and applies the decision to SQLite."""
 
     def __init__(
         self,
         llm: LLMClient,
-        connection: sqlite3.Connection,
+        store: MemoryStore,
+        user_id: str,
     ) -> None:
         self.llm = llm
-        self.connection = connection
-        self.user_id = self.user_id
-        self._ensure_table()
+        self.store = store
+        self.user_id = user_id
 
     def update(
         self,
         candidate: CandidateMemory,
         similar_memories: Sequence[MemoryItem],
         messages: Sequence[Message],
-    ) -> MemoryOperation:
-        """Resolve and apply ADD, UPDATE, DELETE, or NOOP."""
+    ) -> dict[str, Any]:
+        """
+        Resolve a candidate memory and apply the SQLite operation.
+
+        Returns the operation and affected memory information so the caller
+        can synchronize the vector store.
+        """
 
         response = self.llm.complete(
             system_prompt=UPDATE_SYSTEM_PROMPT,
@@ -40,114 +47,65 @@ class MemoryUpdater:
         )
 
         decision = self._parse_response(response)
-
         operation = decision.get("operation")
 
         if operation == MemoryOperation.ADD:
-            self._add_memory(
-                content=str(decision.get("content", "")).strip(),
+            content = str(decision.get("content", "")).strip()
+
+            if not content:
+                return {"operation": MemoryOperation.NOOP}
+
+            memory_id = str(uuid.uuid4())
+
+            self.store.add_memory(
+                memory_id=memory_id,
+                user_id=self.user_id,
+                content=content,
+                memory_type=str(
+                    candidate.metadata.get("type", "fact")
+                ),
                 metadata=candidate.metadata,
             )
-            return MemoryOperation.ADD
+
+            return {
+                "operation": MemoryOperation.ADD,
+                "id": memory_id,
+                "content": content,
+            }
 
         if operation == MemoryOperation.UPDATE:
             memory_id = str(decision.get("id", "")).strip()
             content = str(decision.get("content", "")).strip()
 
-            if memory_id and content:
-                self._update_memory(
-                    memory_id=memory_id,
-                    content=content,
-                    metadata=candidate.metadata,
-                )
-                return MemoryOperation.UPDATE
+            if not memory_id or not content:
+                return {"operation": MemoryOperation.NOOP}
+
+            self.store.update_memory(
+                memory_id=memory_id,
+                content=content,
+                metadata=candidate.metadata,
+            )
+
+            return {
+                "operation": MemoryOperation.UPDATE,
+                "id": memory_id,
+                "content": content,
+            }
 
         if operation == MemoryOperation.DELETE:
             memory_id = str(decision.get("id", "")).strip()
 
-            if memory_id:
-                self._delete_memory(memory_id)
-                return MemoryOperation.DELETE
+            if not memory_id:
+                return {"operation": MemoryOperation.NOOP}
 
-        return MemoryOperation.NOOP
+            self.store.delete_memory(memory_id)
 
-    def _ensure_table(self) -> None:
-        self.connection.execute(
-            """
-            CREATE TABLE IF NOT EXISTS global_memories (
-                memory_id TEXT PRIMARY KEY,
-                user_id TEXT NOT NULL,
-                content TEXT NOT NULL,
-                type TEXT,
-                metadata TEXT,
-                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-            )
-            """
-        )
-        self.connection.commit()
+            return {
+                "operation": MemoryOperation.DELETE,
+                "id": memory_id,
+            }
 
-    def _add_memory(
-        self,
-        content: str,
-        metadata: dict[str, object],
-    ) -> str | None:
-        if not content:
-            return None
-
-        memory_id = str(uuid.uuid4())
-
-        memory_type = str(metadata.get("type", "fact"))
-
-        self.connection.execute(
-            """
-            INSERT INTO global_memories
-            (memory_id, user_id, content, type, metadata)
-            VALUES (?, ?, ?, ?, ?)
-            """,
-            (
-                memory_id,
-                self.user_id,
-                content,
-                memory_type,
-                json.dumps(metadata),
-            ),
-        )
-        self.connection.commit()
-
-        return memory_id
-
-    def _update_memory(
-        self,
-        memory_id: str,
-        content: str,
-        metadata: dict[str, object],
-    ) -> None:
-        self.connection.execute(
-            """
-            UPDATE global_memories
-            SET content = ?,
-                metadata = ?,
-                updated_at = CURRENT_TIMESTAMP
-            WHERE memory_id = ?
-            """,
-            (
-                content,
-                json.dumps(metadata),
-                memory_id,
-            ),
-        )
-        self.connection.commit()
-
-    def _delete_memory(self, memory_id: str) -> None:
-        self.connection.execute(
-            """
-            DELETE FROM global_memories
-            WHERE memory_id = ?
-            """,
-            (memory_id,),
-        )
-        self.connection.commit()
+        return {"operation": MemoryOperation.NOOP}
 
     @staticmethod
     def _format_input(
@@ -155,24 +113,28 @@ class MemoryUpdater:
         similar_memories: Sequence[MemoryItem],
         messages: Sequence[Message],
     ) -> str:
+        user_message = next(
+            (
+                message.content
+                for message in reversed(messages)
+                if message.role == "user"
+            ),
+            "",
+        )
+
+        assistant_response = next(
+            (
+                message.content
+                for message in reversed(messages)
+                if message.role == "assistant"
+            ),
+            "",
+        )
+
         return json.dumps(
             {
-                "user_message": next(
-                    (
-                        message.content
-                        for message in messages
-                        if message.role == "user"
-                    ),
-                    "",
-                ),
-                "assistant_response": next(
-                    (
-                        message.content
-                        for message in reversed(messages)
-                        if message.role == "assistant"
-                    ),
-                    "",
-                ),
+                "user_message": user_message,
+                "assistant_response": assistant_response,
                 "candidate_memory": {
                     "content": candidate.content,
                     "metadata": candidate.metadata,
@@ -191,6 +153,8 @@ class MemoryUpdater:
 
     @staticmethod
     def _parse_response(response: str) -> dict[str, Any]:
+        """Safely parse the JSON returned by the LLM."""
+
         stripped = response.strip()
 
         if stripped.startswith("```"):
