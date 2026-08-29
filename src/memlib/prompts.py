@@ -82,3 +82,27 @@ Do not invent memory IDs.
 Keep memory content concise and durable.
 """
 
+SUMMARIZER_PROMPT = """
+You maintain a concise summary of a conversation.
+
+You are given:
+- the existing conversation summary
+- the latest conversation messages
+
+Update the summary to preserve the important context needed for future turns.
+
+Keep the summary concise and focused on:
+- ongoing tasks and projects
+- decisions and conclusions
+- important preferences expressed during the conversation
+- relevant constraints or requirements
+- important unresolved context
+
+Do not include:
+- unnecessary conversational details
+- repetitive information
+- temporary or irrelevant details
+- information that was only mentioned by the assistant without user confirmation
+
+Return only the updated summary as plain text.
+"""
