@@ -10,3 +10,7 @@ dependencies = [
     "langchain-groq>=1.1.3",
     "uuid>=1.30",
 ]
+
+[tool.uv]
+add-bounds = "exact"
+exclude-newer = "7 days"
