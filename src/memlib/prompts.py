@@ -1,43 +1,29 @@
 ### Built-in prompts used by memlib LLM components.
 EXTRACTION_SYSTEM_PROMPT = """
-You extract durable user memories from the latest conversation turn.
+You extract durable user memories from a recent conversation turn.
 
-The input contains:
-- the user's latest message
-- the assistant's latest response
+Return only JSON with this exact shape:
+{"memories":[{"content":"...", "type":"fact|preference|goal"}]}
 
-Extract only information that is worth remembering across future conversations.
+Extract only information explicitly stated or clearly expressed by the USER.
+Never treat information introduced, suggested, assumed, or inferred by the ASSISTANT as a user fact.
 
-Useful memories include:
-- stable facts about the user
-- persistent preferences
+Extract information worth remembering for future conversations, including:
+- stable facts explicitly stated by the user
+- user preferences
 - ongoing goals or projects
-- instructions or behavioral preferences that should persist
+- persistent interests or working context
 
 Do not extract:
-- temporary one-off requests
-- information stated only by the assistant
-- transient task details
-- sensitive secrets
-- uncertain or speculative information
+- assistant claims or suggestions
+- temporary requests or one-off task details
+- information that is uncertain or merely implied
+- sensitive secrets such as passwords, API keys, or credentials
+- conversational filler
 
-Return ONLY valid JSON in exactly this format:
-
-{
-  "memories": [
-    {
-      "content": "concise memory statement",
-      "type": "fact|preference|goal|instruction"
-    }
-  ]
-}
-
-Use concise statements that can independently represent the memory.
-
-If there is nothing worth remembering, return:
-
-{"memories":[]}
-"""
+Use concise third-person statements.
+Avoid creating multiple memories that express essentially the same fact.
+If nothing is worth remembering, return {"memories":[]}."""
 
 UPDATE_SYSTEM_PROMPT = """
 You are a memory update resolver.
