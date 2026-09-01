@@ -80,15 +80,23 @@ Update the summary to preserve the important context needed for future turns.
 Keep the summary concise and focused on:
 - ongoing tasks and projects
 - decisions and conclusions
-- important preferences expressed during the conversation
+- important preferences explicitly expressed by the user
 - relevant constraints or requirements
 - important unresolved context
+- important questions or topics the user explicitly asked about
+
+Important:
+- Distinguish between information the user explicitly stated and information they merely asked about.
+- A question, request for information, or mention of a topic does not by itself indicate that the user likes, prefers, believes in, uses, or is interested in that topic.
+- Do not infer user interests, preferences, goals, or beliefs from the subjects of their questions.
+- Do not treat questions asked by the user as evidence of a personal preference unless the user explicitly expresses that preference.
 
 Do not include:
 - unnecessary conversational details
 - repetitive information
 - temporary or irrelevant details
 - information that was only mentioned by the assistant without user confirmation
+- assumptions or inferences about the user's interests, preferences, goals, or beliefs
 
 Return only the updated summary as plain text.
 """
