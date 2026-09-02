@@ -1,4 +1,3 @@
-
 import json
 import sqlite3
 from datetime import datetime, timezone
@@ -8,7 +7,6 @@ from memlib.types import MemoryItem, Message
 
 
 class MemoryStore:
-    """SQLite-backed source of truth for conversation history and memories."""
 
     def __init__(self, database: str = "memlib.db") -> None:
         self.connection = sqlite3.connect(database)
@@ -38,6 +36,17 @@ class MemoryStore:
                 type TEXT NOT NULL,
                 metadata TEXT,
                 created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            )
+            """
+        )
+
+        self.connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS summaries (
+                chat_id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                summary_text TEXT NOT NULL,
                 updated_at TEXT NOT NULL
             )
             """
@@ -78,19 +87,20 @@ class MemoryStore:
     def get_recent_messages(
         self,
         chat_id: str,
+        user_id: str,
         limit: int = 2,
     ) -> list[Message]:
-        """Return the most recent conversation messages."""
+        """Return the most recent messages for a user's conversation."""
 
         rows = self.connection.execute(
             """
             SELECT role, content
             FROM messages
-            WHERE chat_id = ?
+            WHERE chat_id = ? AND user_id = ?
             ORDER BY id DESC
             LIMIT ?
             """,
-            (chat_id, limit),
+            (chat_id, user_id, limit),
         ).fetchall()
 
         rows.reverse()
@@ -220,6 +230,57 @@ class MemoryStore:
             )
             for row in rows
         ]
+
+    def get_summary(
+        self,
+        chat_id: str,
+        user_id: str,
+    ) -> str:
+        """Return the persisted summary for a conversation."""
+
+        row = self.connection.execute(
+            """
+            SELECT summary_text
+            FROM summaries
+            WHERE chat_id = ? AND user_id = ?
+            """,
+            (chat_id, user_id),
+        ).fetchone()
+
+        if row is None:
+            return ""
+
+        return str(row["summary_text"])
+
+    def save_summary(
+        self,
+        chat_id: str,
+        user_id: str,
+        summary: str,
+    ) -> None:
+        """Create or replace the persisted summary for a conversation."""
+
+        updated_at = datetime.now(timezone.utc).isoformat()
+
+        self.connection.execute(
+            """
+            INSERT INTO summaries
+            (chat_id, user_id, summary_text, updated_at)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(chat_id) DO UPDATE SET
+                user_id = excluded.user_id,
+                summary_text = excluded.summary_text,
+                updated_at = excluded.updated_at
+            """,
+            (
+                chat_id,
+                user_id,
+                summary,
+                updated_at,
+            ),
+        )
+
+        self.connection.commit()
 
     def close(self) -> None:
         """Close the SQLite connection."""

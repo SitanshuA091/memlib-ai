@@ -12,6 +12,7 @@ class MemoryVectorStore:
         self,
         memory_id: str,
         content: str,
+        user_id: str,
         metadata: dict[str, Any] | None = None,
     ) -> None:
         """Add a global memory embedding using its SQLite memory_id."""
@@ -21,6 +22,7 @@ class MemoryVectorStore:
             metadata={
                 **(metadata or {}),
                 "memory_id": memory_id,
+                "user_id": user_id,
             },
         )
 
@@ -33,6 +35,7 @@ class MemoryVectorStore:
         self,
         memory_id: str,
         content: str,
+        user_id: str,
         metadata: dict[str, Any] | None = None,
     ) -> None:
         """Replace the embedding for an existing global memory."""
@@ -42,6 +45,7 @@ class MemoryVectorStore:
         self.add(
             memory_id=memory_id,
             content=content,
+            user_id=user_id,
             metadata=metadata,
         )
 
@@ -53,12 +57,14 @@ class MemoryVectorStore:
     def search(
         self,
         query: str,
+        user_id: str,
         *,
         limit: int = 5,
     ) -> list[Document]:
-        """Retrieve the most semantically similar global memories."""
+        """Retrieve semantically similar global memories for a user."""
 
         return self.vector_store.similarity_search(
             query,
             k=limit,
+            filter={"user_id": user_id},
         )
