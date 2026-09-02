@@ -1,16 +1,13 @@
-from collections.abc import Sequence
 from memlib.extractor import MemoryExtractor
 from memlib.retriever import MemoryRetriever
 from memlib.store import MemoryStore
 from memlib.summarizer import ConversationSummarizer
-from memlib.types import CandidateMemory, MemoryItem, Message
+from memlib.types import MemoryItem, Message
 from memlib.updater import MemoryUpdater
 from memlib.vector_store import MemoryVectorStore
 
 
 class Memory:
-    """Main user-facing interface for memlib."""
-
     def __init__(
         self,
         *,
@@ -20,7 +17,6 @@ class Memory:
         store: MemoryStore,
         vector_store: MemoryVectorStore,
     ) -> None:
-        self.llm = llm
         self.user_id = user_id
         self.chat_id = chat_id
 
@@ -28,34 +24,20 @@ class Memory:
         self.vector_store = vector_store
 
         self.extractor = MemoryExtractor(llm)
+        self.summarizer = ConversationSummarizer(llm)
         self.retriever = MemoryRetriever(vector_store)
+
         self.updater = MemoryUpdater(
             llm=llm,
             store=store,
             user_id=user_id,
         )
-        self.summarizer = ConversationSummarizer(llm)
-
-        # V1 keeps the current conversation summary in memory.
-        # Persistent summary storage can be added later.
-        self._conversation_summary = ""
 
     def add(
         self,
         user_message: str,
         assistant_response: str,
     ) -> list[MemoryItem]:
-        """
-        Process a completed conversation turn.
-
-        Internally:
-        1. stores conversation history
-        2. updates the conversation summary
-        3. extracts candidate memories
-        4. retrieves similar global memories
-        5. resolves ADD/UPDATE/DELETE/NOOP
-        6. synchronizes the vector store
-        """
 
         messages = [
             Message(
@@ -68,32 +50,46 @@ class Memory:
             ),
         ]
 
-        # Store raw conversation history.
+        # Persist raw conversation history.
         self.store.add_messages(
             chat_id=self.chat_id,
             user_id=self.user_id,
             messages=messages,
         )
 
-        # Update conversation-specific summary.
-        self._conversation_summary = self.summarizer.summarize(
-            current_summary=self._conversation_summary,
+        # Load the existing persistent summary for this conversation.
+        current_summary = self.store.get_summary(
+            chat_id=self.chat_id,
+            user_id=self.user_id,
+        )
+
+        # Update the conversation summary using the summarizer LLM.
+        updated_summary = self.summarizer.summarize(
+            current_summary=current_summary,
             messages=messages,
         )
 
-        # Extract durable candidate memories.
+        # Persist the updated conversation summary.
+        self.store.save_summary(
+            chat_id=self.chat_id,
+            user_id=self.user_id,
+            summary=updated_summary,
+        )
+
+        # Extract durable global memories from the latest turn.
         candidates = self.extractor.extract(messages)
 
         updated_memories: list[MemoryItem] = []
 
         for candidate in candidates:
-            # Find existing global memories similar to the candidate.
+            # Retrieve similar global memories belonging only to this user.
             similar_memories = self.retriever.search_candidate(
                 candidate,
+                user_id=self.user_id,
                 limit=5,
             )
 
-            # Resolve ADD / UPDATE / DELETE / NOOP.
+            # Ask the updater LLM for ADD / UPDATE / DELETE / NOOP.
             result = self.updater.update(
                 candidate=candidate,
                 similar_memories=similar_memories,
@@ -106,10 +102,8 @@ class Memory:
                 self.vector_store.add(
                     memory_id=result["id"],
                     content=result["content"],
-                    metadata={
-                        **candidate.metadata,
-                        "user_id": self.user_id,
-                    },
+                    user_id=self.user_id,
+                    metadata=candidate.metadata,
                 )
 
                 memory = self.store.get_memory(result["id"])
@@ -120,10 +114,8 @@ class Memory:
                 self.vector_store.update(
                     memory_id=result["id"],
                     content=result["content"],
-                    metadata={
-                        **candidate.metadata,
-                        "user_id": self.user_id,
-                    },
+                    user_id=self.user_id,
+                    metadata=candidate.metadata,
                 )
 
                 memory = self.store.get_memory(result["id"])
@@ -143,17 +135,11 @@ class Memory:
     ) -> list[MemoryItem]:
         """Retrieve relevant global memories for this user."""
 
-        memories = self.retriever.search(
+        return self.retriever.search(
             query,
+            user_id=self.user_id,
             limit=limit,
         )
-
-        # V1 user scoping: filter the returned memories by user_id.
-        return [
-            memory
-            for memory in memories
-            if memory.metadata.get("user_id") == self.user_id
-        ]
 
     def get_context(
         self,
@@ -161,7 +147,7 @@ class Memory:
         *,
         limit: int = 5,
     ) -> str:
-        """Return relevant memories as prompt-ready context."""
+        """Return relevant memories formatted for an agent prompt."""
 
         memories = self.search(
             query,
@@ -177,8 +163,6 @@ class Memory:
         )
 
     def clear(self, user_id: str | None = None) -> None:
-        """Delete all global memories belonging to a user."""
-
         target_user_id = user_id or self.user_id
 
         memories = self.store.get_memories(target_user_id)

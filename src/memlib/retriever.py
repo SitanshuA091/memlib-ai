@@ -1,5 +1,3 @@
-"""Semantic retrieval of global user memories."""
-
 from collections.abc import Sequence
 
 from langchain_core.documents import Document
@@ -20,11 +18,12 @@ class MemoryRetriever:
     def search(
         self,
         query: str,
+        user_id: str,
         *,
         limit: int = 5,
     ) -> list[MemoryItem]:
         """
-        Search global memories using semantic similarity.
+        Search global memories for a specific user using semantic similarity.
 
         Returns memories with the same IDs used by the SQLite
         global memories table.
@@ -35,6 +34,7 @@ class MemoryRetriever:
 
         documents = self.vector_store.search(
             query,
+            user_id=user_id,
             limit=limit,
         )
 
@@ -46,13 +46,15 @@ class MemoryRetriever:
     def search_candidate(
         self,
         candidate: CandidateMemory,
+        user_id: str,
         *,
         limit: int = 5,
     ) -> list[MemoryItem]:
-        """Find existing global memories similar to a candidate memory."""
+        """Find existing global memories similar to a candidate for a user."""
 
         return self.search(
             candidate.content,
+            user_id=user_id,
             limit=limit,
         )
 
