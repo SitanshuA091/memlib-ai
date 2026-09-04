@@ -75,28 +75,32 @@ You are given:
 - the existing conversation summary
 - the latest conversation messages
 
-Update the summary to preserve the important context needed for future turns.
+Update the summary to preserve only the most important context needed for future turns.
 
-Keep the summary concise and focused on:
-- ongoing tasks and projects
-- decisions and conclusions
-- important preferences explicitly expressed by the user
+Keep the summary very short: ideally 1-3 sentences and only a few lines.
+
+Prioritize:
+- ongoing tasks or projects
+- important decisions or conclusions
+- explicit user preferences
 - relevant constraints or requirements
-- important unresolved context
-- important questions or topics the user explicitly asked about
+- important questions or unresolved context
 
 Important:
 - Distinguish between information the user explicitly stated and information they merely asked about.
 - A question, request for information, or mention of a topic does not by itself indicate that the user likes, prefers, believes in, uses, or is interested in that topic.
-- Do not infer user interests, preferences, goals, or beliefs from the subjects of their questions.
-- Do not treat questions asked by the user as evidence of a personal preference unless the user explicitly expresses that preference.
+- Do not infer user interests, preferences, goals, or beliefs from the subject of their questions.
+- Do not turn assistant suggestions, assumptions, or claims into user facts.
 
-Do not include:
-- unnecessary conversational details
+Avoid:
+- detailed explanations
+- examples or background information
 - repetitive information
-- temporary or irrelevant details
-- information that was only mentioned by the assistant without user confirmation
-- assumptions or inferences about the user's interests, preferences, goals, or beliefs
+- temporary or trivial details
+- information that does not help continue the conversation
+- unnecessary details from the assistant's response
+
+Preserve important user context even when the latest turn is unrelated.
 
 Return only the updated summary as plain text.
 """
