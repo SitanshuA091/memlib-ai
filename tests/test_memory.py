@@ -24,7 +24,7 @@ def main() -> None:
     if not api_key:
         raise RuntimeError("GROQ_API_KEY is not set.")
 
-    # End user chooses the LangChain chat model.
+    # Developer-selected LangChain chat model.
     llm = LLMClient(
         ChatGroq(
             model="openai/gpt-oss-120b",
@@ -33,7 +33,7 @@ def main() -> None:
         )
     )
 
-    # Embedding model used by the vector store.
+    # Embedding model for global-memory semantic search.
     embeddings = HuggingFaceEmbeddings(
         model_name="sentence-transformers/all-MiniLM-L6-v2"
     )
@@ -41,7 +41,7 @@ def main() -> None:
     # Persistent SQLite storage.
     store = MemoryStore("memlib.db")
 
-    # Persistent Chroma vector storage.
+    # Persistent Chroma storage.
     chroma = Chroma(
         collection_name="memlib_memories",
         embedding_function=embeddings,
@@ -60,7 +60,7 @@ def main() -> None:
     )
 
     print("Memlib test started.")
-    print("Type 'exit' to stop.\n")
+    print("Type 'exit' to quit.\n")
 
     while True:
         user_message = input("You: ").strip()
@@ -71,42 +71,47 @@ def main() -> None:
         if not user_message:
             continue
 
-        # Retrieve persistent memories before generating the response.
-        context = memory.get_context(user_message)
+        # Retrieve relevant persistent global memories.
+        context = memory.get_context(
+            user_message,
+            limit=5,
+        )
 
         response = llm.complete(
             system_prompt=(
-                "You are a helpful assistant. "
-                "Use the supplied user memory only when relevant. "
+                "You are a helpful assistant with access to persistent "
+                "user memories. Use the supplied memories only when relevant. "
                 "Do not invent personal information."
             ),
             user_prompt=(
                 f"Relevant user memories:\n"
                 f"{context or 'No relevant memories found.'}\n\n"
-                f"User message:\n{user_message}"
+                f"User message:\n"
+                f"{user_message}"
             ),
-        )
+        ).strip()
 
-        print(f"Assistant: {response}")
+        print(f"Assistant: {response}\n")
 
-        # Main memory API.
+        # Persist conversation + extract/update global memories +
+        # persist conversation summary.
         memory.add(
             user_message=user_message,
             assistant_response=response,
         )
 
-        # Inspect persistent global memories for this user.
-        print("\nGlobal memories:")
-
+        # Show current global memories for debugging.
         memories = store.get_memories(USER_ID)
 
-        if not memories:
-            print("  None")
-        else:
+        print("Global memories:")
+
+        if memories:
             for item in memories:
                 print(f"  [{item.id}] {item.content}")
+        else:
+            print("  None")
 
-        # Inspect the persisted conversation summary.
+        # Show persisted conversation summary.
         summary = store.get_summary(
             chat_id=CHAT_ID,
             user_id=USER_ID,
@@ -115,9 +120,11 @@ def main() -> None:
         print("\nConversation summary:")
         print(summary or "  None")
 
-        print("\n" + "-" * 70 + "\n")
+        print("\n" + "-" * 70)
+        print("Ready for the next message.\n")
 
     store.close()
+    print("Memlib test ended.")
 
 
 if __name__ == "__main__":
