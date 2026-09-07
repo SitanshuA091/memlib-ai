@@ -1,5 +1,5 @@
 [project]
-name = "memlib"
+name = "memlib-ai"
 version = "0.1.0"
 description = "Lightweight persistent memory infrastructure for AI agents"
 readme = "README.pypi.md"
