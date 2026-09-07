@@ -8,10 +8,11 @@ from memlib.graph_store import GraphStore
 from memlib.retriever import MemoryRetriever
 from memlib.router import MemoryRouter
 from memlib.store import MemoryStore
-from memlib.summarizer import MemorySummarizer
+from memlib.summarizer import ConversationSummarizer
 from memlib.types import MemoryItem, Message
 from memlib.updater import MemoryUpdater
 from memlib.vector_store import MemoryVectorStore
+from memlib.llm import LLMClient
 
 
 class Memory:
@@ -30,7 +31,8 @@ class Memory:
 
     def __init__(
         self,
-        llm: BaseChatModel,
+        llm: LLMClient,
+        chat_model: BaseChatModel,
         user_id: str,
         chat_id: str,
         store: MemoryStore,
@@ -46,8 +48,8 @@ class Memory:
         self.graph_store = graph_store
 
         self.extractor = MemoryExtractor(llm)
-        self.updater = MemoryUpdater(llm)
-        self.summarizer = MemorySummarizer(llm)
+        self.updater = MemoryUpdater(llm, store, user_id)
+        self.summarizer = ConversationSummarizer(llm)
 
         self.retriever = MemoryRetriever(
             vector_store=vector_store,
@@ -56,13 +58,13 @@ class Memory:
 
         # Graph functionality is optional.
         self.router = (
-            MemoryRouter(llm)
+            MemoryRouter(chat_model)
             if graph_store is not None
             else None
         )
 
         self.graph_extractor = (
-            GraphExtractor(llm)
+            GraphExtractor(chat_model)
             if graph_store is not None
             else None
         )
@@ -83,19 +85,25 @@ class Memory:
         5. synchronized across SQLite, vector storage and graph storage
         """
 
-        self._store_messages(
-            user_message=user_message,
-            assistant_response=assistant_response,
-        )
+        messages = [
+            Message(
+                role="user",
+                content=user_message,
+            ),
+            Message(
+                role="assistant",
+                content=assistant_response,
+            ),
+        ]
+
+        self._store_messages(messages)
 
         self._update_summary(
-            user_message=user_message,
-            assistant_response=assistant_response,
+            messages=messages,
         )
 
         candidates = self.extractor.extract(
-            user_message=user_message,
-            assistant_response=assistant_response,
+            messages=messages,
         )
 
         for candidate in candidates:
@@ -108,6 +116,7 @@ class Memory:
             decision = self.updater.decide(
                 candidate=candidate,
                 existing_memories=existing_memories,
+                messages=messages,
             )
 
             action = decision.action.upper()
@@ -348,21 +357,9 @@ class Memory:
 
     def _store_messages(
         self,
-        user_message: str,
-        assistant_response: str,
+        messages: list[Message],
     ) -> None:
         """Persist the raw conversation turn."""
-
-        messages = [
-            Message(
-                role="user",
-                content=user_message,
-            ),
-            Message(
-                role="assistant",
-                content=assistant_response,
-            ),
-        ]
 
         self.store.add_messages(
             chat_id=self.chat_id,
@@ -372,8 +369,7 @@ class Memory:
 
     def _update_summary(
         self,
-        user_message: str,
-        assistant_response: str,
+        messages: list[Message],
     ) -> None:
         """Update the persistent per-conversation summary."""
 
@@ -382,19 +378,8 @@ class Memory:
             user_id=self.user_id,
         )
 
-        messages = [
-            Message(
-                role="user",
-                content=user_message,
-            ),
-            Message(
-                role="assistant",
-                content=assistant_response,
-            ),
-        ]
-
         summary = self.summarizer.summarize(
-            existing_summary=existing_summary or "",
+            current_summary=existing_summary or "",
             messages=messages,
         )
 
