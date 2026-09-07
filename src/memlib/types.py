@@ -1,42 +1,50 @@
-"""Shared data models used across memlib."""
-
 from dataclasses import dataclass, field
-from enum import StrEnum
-from typing import Literal
+from typing import Any, Literal
 
 
-Role = Literal["user", "assistant"]
-
-
-@dataclass(slots=True)
+@dataclass
 class Message:
-    """A conversation message."""
-
-    role: Role
+    role: str
     content: str
 
 
-@dataclass(slots=True)
+@dataclass
 class CandidateMemory:
-    """A durable memory candidate extracted from a conversation turn."""
-
     content: str
-    metadata: dict[str, object] = field(default_factory=dict)
+    memory_type: str
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
-@dataclass(slots=True)
+@dataclass
 class MemoryItem:
-    """A persisted global user memory."""
-
     id: str
     content: str
-    metadata: dict[str, object] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
-class MemoryOperation(StrEnum):
-    """Operations the update resolver can perform on global memory."""
+@dataclass
+class MemoryUpdate:
+    action: Literal["ADD", "UPDATE", "DELETE", "NOOP"]
+    memory_id: str | None = None
+    content: str | None = None
+    memory_type: str | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    ADD = "ADD"
-    UPDATE = "UPDATE"
-    DELETE = "DELETE"
-    NOOP = "NOOP"
+
+@dataclass
+class RetrievalDecision:
+    needs_graph: bool
+    reason: str | None = None
+    # needs_graph = False - candidate memories sufficient, 
+    # needs_graph = True means add additional relationship/entity context
+
+@dataclass
+class GraphFact:
+    subject: str
+    relation: str
+    object: str
+    memory_id: str
+    user_id: str
+    metadata: dict[str, Any] = field(default_factory=dict)
+    
+    # memory_id shud be same as candidate memories(sqlite and embeddings and)
