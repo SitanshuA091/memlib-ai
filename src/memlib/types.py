@@ -47,4 +47,3 @@ class GraphFact:
     user_id: str
     metadata: dict[str, Any] = field(default_factory=dict)
     
-    # memory_id shud be same as candidate memories(sqlite and embeddings and)
