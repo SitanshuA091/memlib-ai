@@ -12,3 +12,4 @@ wheels/
 *.db
 test_chroma/
 chroma_db/
+.pytest-tmp
