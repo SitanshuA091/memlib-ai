@@ -4,8 +4,6 @@ from memlib.vector_store import MemoryVectorStore
 
 
 class MemoryRetriever:
-    """Retrieves semantically similar canonical global memories."""
-
     def __init__(
         self,
         vector_store: MemoryVectorStore,
@@ -21,13 +19,6 @@ class MemoryRetriever:
         *,
         limit: int = 5,
     ) -> list[MemoryItem]:
-        """
-        Search global memories using semantic similarity.
-
-        The vector store is used only for retrieval.
-        The returned memories are fetched from SQLite, which remains
-        the canonical source of truth.
-        """
 
         if not query.strip():
             return []
@@ -62,8 +53,6 @@ class MemoryRetriever:
         *,
         limit: int = 5,
     ) -> list[MemoryItem]:
-        """Find existing canonical memories similar to a candidate memory."""
-
         return self.search(
             query=candidate.content,
             user_id=user_id,

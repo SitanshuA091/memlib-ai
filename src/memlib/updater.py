@@ -1,5 +1,3 @@
-"""LLM-based global memory update resolver."""
-
 import json
 import uuid
 from collections.abc import Sequence
@@ -7,12 +5,11 @@ from typing import Any
 
 from memlib.llm import LLMClient
 from memlib.store import MemoryStore
-from memlib.types import CandidateMemory, MemoryItem, MemoryOperation, Message
+from memlib.types import CandidateMemory, MemoryItem, MemoryUpdate, Message
 from memlib.prompts import UPDATE_SYSTEM_PROMPT
 
 
 class MemoryUpdater:
-    """Resolves candidate memories and applies the decision to SQLite."""
 
     def __init__(
         self,
@@ -24,24 +21,17 @@ class MemoryUpdater:
         self.store = store
         self.user_id = user_id
 
-    def update(
+    def decide(
         self,
         candidate: CandidateMemory,
-        similar_memories: Sequence[MemoryItem],
+        existing_memories: Sequence[MemoryItem],
         messages: Sequence[Message],
-    ) -> dict[str, Any]:
-        """
-        Resolve a candidate memory and apply the SQLite operation.
-
-        Returns the operation and affected memory information so the caller
-        can synchronize the vector store.
-        """
-
+    ) -> MemoryUpdate:
         response = self.llm.complete(
             system_prompt=UPDATE_SYSTEM_PROMPT,
             user_prompt=self._format_input(
                 candidate=candidate,
-                similar_memories=similar_memories,
+                similar_memories=existing_memories,
                 messages=messages,
             ),
         )
@@ -49,63 +39,98 @@ class MemoryUpdater:
         decision = self._parse_response(response)
         operation = decision.get("operation")
 
-        if operation == MemoryOperation.ADD:
+        if operation == "ADD":
             content = str(decision.get("content", "")).strip()
 
             if not content:
-                return {"operation": MemoryOperation.NOOP}
+                return MemoryUpdate(action="NOOP")
 
+            return MemoryUpdate(
+                action="ADD",
+                content=content,
+                memory_type=candidate.memory_type,
+                metadata=candidate.metadata,
+            )
+
+        if operation == "UPDATE":
+            memory_id = str(decision.get("id", "")).strip()
+            content = str(decision.get("content", "")).strip()
+
+            if not memory_id or not content:
+                return MemoryUpdate(action="NOOP")
+
+            return MemoryUpdate(
+                action="UPDATE",
+                memory_id=memory_id,
+                content=content,
+                memory_type=candidate.memory_type,
+                metadata=candidate.metadata,
+            )
+
+        if operation == "DELETE":
+            memory_id = str(decision.get("id", "")).strip()
+
+            if not memory_id:
+                return MemoryUpdate(action="NOOP")
+
+            return MemoryUpdate(
+                action="DELETE",
+                memory_id=memory_id,
+            )
+
+        return MemoryUpdate(action="NOOP")
+
+    def update(
+        self,
+        candidate: CandidateMemory,
+        similar_memories: Sequence[MemoryItem],
+        messages: Sequence[Message],
+    ) -> dict[str, Any]:
+        decision = self.decide(
+            candidate=candidate,
+            existing_memories=similar_memories,
+            messages=messages,
+        )
+
+        if decision.action == "ADD":
             memory_id = str(uuid.uuid4())
 
             self.store.add_memory(
                 memory_id=memory_id,
                 user_id=self.user_id,
-                content=content,
-                memory_type=str(
-                    candidate.metadata.get("type", "fact")
-                ),
-                metadata=candidate.metadata,
+                content=decision.content or "",
+                memory_type=decision.memory_type or "fact",
+                metadata=decision.metadata,
             )
 
             return {
-                "operation": MemoryOperation.ADD,
+                "operation": "ADD",
                 "id": memory_id,
-                "content": content,
+                "content": decision.content,
             }
 
-        if operation == MemoryOperation.UPDATE:
-            memory_id = str(decision.get("id", "")).strip()
-            content = str(decision.get("content", "")).strip()
-
-            if not memory_id or not content:
-                return {"operation": MemoryOperation.NOOP}
-
+        if decision.action == "UPDATE" and decision.memory_id:
             self.store.update_memory(
-                memory_id=memory_id,
-                content=content,
-                metadata=candidate.metadata,
+                memory_id=decision.memory_id,
+                content=decision.content or "",
+                metadata=decision.metadata,
             )
 
             return {
-                "operation": MemoryOperation.UPDATE,
-                "id": memory_id,
-                "content": content,
+                "operation": "UPDATE",
+                "id": decision.memory_id,
+                "content": decision.content,
             }
 
-        if operation == MemoryOperation.DELETE:
-            memory_id = str(decision.get("id", "")).strip()
-
-            if not memory_id:
-                return {"operation": MemoryOperation.NOOP}
-
-            self.store.delete_memory(memory_id)
+        if decision.action == "DELETE" and decision.memory_id:
+            self.store.delete_memory(decision.memory_id)
 
             return {
-                "operation": MemoryOperation.DELETE,
-                "id": memory_id,
+                "operation": "DELETE",
+                "id": decision.memory_id,
             }
 
-        return {"operation": MemoryOperation.NOOP}
+        return {"operation": "NOOP"}
 
     @staticmethod
     def _format_input(
@@ -153,7 +178,6 @@ class MemoryUpdater:
 
     @staticmethod
     def _parse_response(response: str) -> dict[str, Any]:
-        """Safely parse the JSON returned by the LLM."""
 
         stripped = response.strip()
 
@@ -175,12 +199,7 @@ class MemoryUpdater:
 
         operation = data.get("operation")
 
-        if operation not in {
-            MemoryOperation.ADD,
-            MemoryOperation.UPDATE,
-            MemoryOperation.DELETE,
-            MemoryOperation.NOOP,
-        }:
+        if operation not in {"ADD", "UPDATE", "DELETE", "NOOP"}:
             return {}
 
         return data
