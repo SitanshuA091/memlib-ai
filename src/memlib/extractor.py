@@ -1,5 +1,3 @@
-"""Extract candidate long-term memories from the latest conversation turn."""
-
 import json
 from collections.abc import Sequence
 from typing import Any
@@ -15,9 +13,6 @@ class MemoryExtractor:
         self.llm = llm
 
     def extract(self, messages: Sequence[Message]) -> list[CandidateMemory]:
-        """
-        Extract candidate memories from the latest user/assistant pair.
-        """
 
         pair = self._latest_pair(messages)
 
@@ -33,7 +28,6 @@ class MemoryExtractor:
 
     @staticmethod
     def _latest_pair(messages: Sequence[Message]) -> list[Message]:
-        """Return the latest user message and assistant response."""
 
         if len(messages) < 2:
             return []
@@ -42,7 +36,6 @@ class MemoryExtractor:
 
     @staticmethod
     def _format_input(messages: Sequence[Message]) -> str:
-        """Format the latest conversation pair for the extraction LLM."""
 
         return json.dumps(
             {
@@ -54,8 +47,6 @@ class MemoryExtractor:
 
     @staticmethod
     def _parse_response(response: str) -> list[CandidateMemory]:
-        """Parse the structured LLM response into candidate memories."""
-
         data = MemoryExtractor._load_json(response)
 
         if not isinstance(data, dict):
@@ -73,6 +64,7 @@ class MemoryExtractor:
                 continue
 
             content = str(raw_memory.get("content", "")).strip()
+            memory_type = str(raw_memory.get("type", "fact")).strip() or "fact"
 
             if not content:
                 continue
@@ -86,6 +78,7 @@ class MemoryExtractor:
             candidates.append(
                 CandidateMemory(
                     content=content,
+                    memory_type=memory_type,
                     metadata=metadata,
                 )
             )
@@ -94,8 +87,6 @@ class MemoryExtractor:
 
     @staticmethod
     def _load_json(response: str) -> Any:
-        """Safely parse JSON returned by the LLM."""
-
         stripped = response.strip()
 
         if stripped.startswith("```"):
