@@ -31,13 +31,6 @@ class _GraphExtractionOutput(BaseModel):
 
 
 class GraphExtractor:
-    """
-    Extract graph relationships from canonical memories.
-
-    The extractor accepts any LangChain BaseChatModel implementation,
-    keeping the component independent of the LLM provider.
-    """
-
     def __init__(self, llm: BaseChatModel) -> None:
         self.llm = llm
 
@@ -50,13 +43,6 @@ class GraphExtractor:
         memory: MemoryItem,
         user_id: str,
     ) -> list[GraphFact]:
-        """
-        Convert a canonical memory into graph relationships.
-
-        Every GraphFact retains the original memory_id so graph
-        relationships can always be traced back to SQLite.
-        """
-
         if not memory.content.strip():
             return []
 
