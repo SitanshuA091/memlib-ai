@@ -15,6 +15,7 @@ dependencies = [
 test = [
     "langchain-chroma",
     "langchain-groq",
+    "langchain-google-genai",
     "langchain-huggingface",
     "python-dotenv",
     "sentence-transformers",
