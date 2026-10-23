@@ -1,4 +1,9 @@
-# MEMLIB-AI
+<a name="readme-top"></a>
+
+<div align="center">
+  <img src="assets/memlib.ai.png" alt="Logo" width="180">
+  <h1 align="center">MemLib-Ai </h1>
+</div>
 
 `memlib` is a lightweight persistent-memory library for AI agents.
 
