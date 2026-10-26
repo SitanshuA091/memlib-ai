@@ -1,7 +1,7 @@
 <a name="readme-top"></a>
 
 <div align="center">
-  <img src="assets/memlib.ai.png" alt="Logo" width="180">
+  <img src="assets/memliblogo.png" alt="Logo" width="180">
   <h1 align="center">MemLib-Ai </h1>
 </div>
 
