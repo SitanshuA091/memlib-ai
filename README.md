@@ -5,6 +5,9 @@
   <h1 align="center">MemLib-Ai </h1>
 </div>
 
+
+![Python](https://img.shields.io/badge/Python-3.13-blue) ![Neo4j](https://img.shields.io/badge/Neo4j-green) ![langchain](https://img.shields.io/badge/LangChain-ffffff?logoColor=blue) ![Downloads](https://img.shields.io/badge/downloads-558-blue)
+
 `memlib` is a lightweight persistent-memory library for AI agents.
 
 It provides long-term memory across conversations and sessions using:
