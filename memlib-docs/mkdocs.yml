@@ -1,0 +1,62 @@
+site_name: memlib
+site_description: Lightweight persistent-memory infrastructure for AI agents
+site_url: https://SitanshuA091.github.io/memlib-ai/
+repo_url: https://github.com/SitanshuA091/memlib-ai
+repo_name: SitanshuA091/memlib-ai
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  logo: assets/memliblogo.png
+  favicon: assets/memliblogo.png
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+    - content.action.edit
+    - toc.follow
+    - search.suggest
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.highlight
+  - pymdownx.inlinehilite
+  - tables
+  - toc:
+      permalink: true
+
+plugins:
+  - search
+
+nav:
+  - Home: index.md
+  - Getting Started: getting-started.md
+  - Architecture: architecture.md
+  - Memory Lifecycle: memory-lifecycle.md
+  - Vector Stores: vector-stores.md
+  - Knowledge Graph: knowledge-graph.md
+  - API Reference: api-reference.md
+  - Case Study: case-study.md
