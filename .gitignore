@@ -13,3 +13,4 @@ wheels/
 test_chroma/
 chroma_db/
 .pytest-tmp
+/memlib-docs/site/
