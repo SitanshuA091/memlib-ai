@@ -6,7 +6,10 @@
 </div>
 
 
-![Python](https://img.shields.io/badge/Python-3.13-blue) ![Neo4j](https://img.shields.io/badge/Neo4j-green) ![langchain](https://img.shields.io/badge/LangChain-ffffff?logoColor=blue) ![Sqlite](https://img.shields.io/badge/SQLite-003B57?style=flat-square&logo=SQLite&logoColor=white) ![Downloads](https://img.shields.io/badge/downloads-558-blue)
+![Python](https://img.shields.io/badge/Python-3.13-blue) ![Neo4j](https://img.shields.io/badge/Neo4j-green) ![langchain](https://img.shields.io/badge/LangChain-ffffff?logoColor=blue) ![Sqlite](https://img.shields.io/badge/SQLite-003B57?style=flat-square&logo=SQLite&logoColor=white) ![Downloads](https://img.shields.io/badge/downloads-558-blue) 
+   [![Docs](https://img.shields.io/badge/docs-live-blue)](https://SitanshuA091.github.io/memlib-ai/)
+
+
 
 `memlib` is a lightweight persistent-memory library for AI agents.
 
