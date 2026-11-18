@@ -43,7 +43,7 @@ jobs:
         run: uv sync --group docs
 
       - name: Build documentation
-        run: uv run --no-sync mkdocs build --strict --config-file memlib-docs/mkdocs.yaml
+        run: uv run --no-sync mkdocs build --strict --config-file memlib-docs/mkdocs.yml
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
