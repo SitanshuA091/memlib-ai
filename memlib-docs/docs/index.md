@@ -1,4 +1,9 @@
-# memlib
+<a name="readme-top"></a>
+
+<h1 align="left">
+  <img src="assets/memliblogo.png" alt="Memlib logo" width="66" align="absmiddle">
+  MemLib
+</h1>
 
 **A lightweight persistent-memory layer for AI agents.**
 
