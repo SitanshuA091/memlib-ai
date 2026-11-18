@@ -12,6 +12,9 @@ dependencies = [
 
 
 [dependency-groups]
+docs = [
+    "mkdocs-material==9.8.1",
+]
 test = [
     "langchain-chroma",
     "langchain-groq",
