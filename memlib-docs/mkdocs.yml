@@ -1,14 +1,16 @@
-site_name: memory layer for your AI agents - MemLib
+site_name: MemLib
 site_description: Lightweight persistent-memory infrastructure for AI agents
 site_url: https://SitanshuA091.github.io/memlib-ai/
 repo_url: https://github.com/SitanshuA091/memlib-ai
 repo_name: SitanshuA091/memlib-ai
 edit_uri: edit/main/docs/
+extra_css:
+  - stylesheets/extra.css
 
 theme:
   name: material
   logo: assets/memliblogo.png
-  favicon: assets/memliblogo.png
+  favicon: assets/memliblogo-2.png
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
