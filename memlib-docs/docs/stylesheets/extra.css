@@ -1,0 +1,43 @@
+.md-typeset h1:first-of-type {
+  position: relative;
+  margin: -1.2rem -1.2rem 1.5rem -1.2rem;
+  padding: 3rem 1.2rem 2rem 1.2rem;
+  background: radial-gradient(
+    circle at top left,
+    rgba(99, 102, 241, 0.18),
+    transparent 60%
+  );
+  border-bottom: 1px solid var(--md-default-fg-color--lightest);
+}
+
+[data-md-color-scheme="slate"] {
+  --md-default-bg-color: #11131a;
+  --md-default-bg-color--light: #11131a;
+  --md-default-bg-color--lighter: #11131a;
+  --md-default-bg-color--lightest: #11131a;
+}
+
+[data-md-color-scheme="slate"] .md-typeset h1:first-of-type {
+  background: radial-gradient(
+    circle at top left,
+    rgba(99, 102, 241, 0.28),
+    transparent 60%
+  );
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-color: var(--md-default-bg-color);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220' viewBox='0 0 220 220'%3E%3Cg fill='none' stroke='%23ffffff' stroke-width='1'%3E%3Ccircle cx='30' cy='30' r='3'/%3E%3Ccircle cx='110' cy='60' r='3'/%3E%3Ccircle cx='190' cy='25' r='3'/%3E%3Ccircle cx='60' cy='130' r='3'/%3E%3Ccircle cx='150' cy='150' r='3'/%3E%3Ccircle cx='20' cy='190' r='3'/%3E%3Ccircle cx='195' cy='190' r='3'/%3E%3Cpath d='M30 30 L110 60 M110 60 L190 25 M110 60 L60 130 M60 130 L150 150 M60 130 L20 190 M150 150 L195 190 M150 150 L190 25'/%3E%3C/g%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 220px 220px;
+  opacity: 0.05;
+}
+
+[data-md-color-scheme="slate"] body::before {
+  opacity: 0.08;
+}
