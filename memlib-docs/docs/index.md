@@ -1,11 +1,14 @@
+---
+title: Memory layer for your AI agents
+---
 <a name="readme-top"></a>
 
-<h1 align="left">
+<h1 style="font-weight: bold; align: left;">
   <img src="assets/memliblogo.png" alt="Memlib logo" width="66" align="absmiddle">
   MemLib
 </h1>
 
-**A lightweight persistent-memory layer for AI agents.**
+### **A lightweight persistent-memory layer for AI agents.**
 
 `memlib` gives LangChain / LangGraph agents long-term memory across conversations and sessions, without taking over the agent architecture itself. Your application still owns routing, tools, and response generation — memlib just remembers.
 
@@ -17,7 +20,6 @@ pip install memlib-ai
 ```
 
 ## Why memlib
-
 Most memory layers force a choice: pick a provider, pick a vector database, pick a framework. memlib is built around three adapters instead:
 
 - **Model-adaptive** — any LangChain `BaseChatModel` (Groq, OpenAI, Gemini, Anthropic, Mistral, ...) can drive extraction, update resolution, summarization, and routing.

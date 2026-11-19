@@ -1,4 +1,4 @@
-# Memory Lifecycle
+# **Memory Lifecycle**
 
 ## `memory.add(user_message, assistant_response)`
 

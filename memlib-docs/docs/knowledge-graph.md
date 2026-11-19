@@ -1,4 +1,4 @@
-# Knowledge Graph
+# **Knowledge Graph**
 
 The knowledge graph is entirely optional. If `graph_store` is `None`, `Memory` never builds a `MemoryRouter` or `GraphExtractor`, and `get_context()` skips graph retrieval without any extra branching in application code.
 

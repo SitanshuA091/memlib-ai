@@ -1,4 +1,4 @@
-# Case Study: Building memlib
+# **Case Study**: Building memlib
 
 ## The problem
 

@@ -1,4 +1,4 @@
-# Architecture
+# **Architecture**
 
 ## Three storage layers, one source of truth
 
